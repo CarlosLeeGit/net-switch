@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.8.0)
+
+project(thirdparty)
+
+include(ExternalProject)
+
+ExternalProject_Add(
+    GoogleTest
+    URL                 ${GOOGLETEST_REPO}
+    SOURCE_DIR          ${GOOGLETEST_SOURCE_DIR}
+    CONFIGURE_COMMAND   ""
+    BUILD_COMMAND       ""
+    INSTALL_COMMAND     ""
+    TEST_COMMAND        ""
+)
