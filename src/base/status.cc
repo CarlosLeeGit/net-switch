@@ -14,7 +14,7 @@ bool Status::operator!=(StatusCode code) const { return code_ != code; }
 
 bool Status::operator==(StatusCode code) const { return code_ == code; }
 
-Status::operator bool() const { return code_ == STATUS_OK; }
+Status::operator StatusCode() const { return code_; }
 
 }  // namespace base
 }  // namespace netswitch

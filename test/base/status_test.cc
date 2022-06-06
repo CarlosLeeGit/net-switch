@@ -16,9 +16,6 @@ TEST_F(StatusTest, StatusTest) {
   EXPECT_TRUE(s == STATUS_OK);
   EXPECT_TRUE(STATUS_OK == s);
   EXPECT_TRUE(STATUS_FAIL != s);
-  EXPECT_TRUE(s);
   Status s2 = STATUS_FAIL;
-  EXPECT_FALSE(s2);
-  EXPECT_TRUE(!s2);
   EXPECT_NE(s, s2);
 }

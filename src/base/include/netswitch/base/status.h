@@ -25,7 +25,7 @@ class Status {
 
   bool operator==(StatusCode code) const;
 
-  operator bool() const;
+  operator StatusCode() const;
 
  private:
   StatusCode code_{STATUS_OK};
