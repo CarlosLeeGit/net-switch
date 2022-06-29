@@ -1,37 +1,40 @@
-#include "http_listener_impl.h"
+#include "netswitch/http/server/http_listener_impl.h"
 
-#include "http_listener.h"
-#include "http_server.h"
+#include "netswitch/base/log.h"
+#include "netswitch/http/server/http_server.h"
 
 namespace netswitch {
 namespace http {
+namespace server {
 
-HttpRequestImpl::HttpRequestImpl(
-    std::shared_ptr<netswitch::HttpConnect> http_conn)
-    : http_conn_(http_conn) {}
+using namespace base;
 
-std::string HttpRequestImpl::Body() { return ""; }
-
-std::unordered_multimap<std::string, std::string> HttpRequestImpl::Headers() {
-  return {};
+ListenerConfig &ListenerConfig::SetKeepAliveCount(size_t count) {
+  keep_alive_count_ = count;
+  return *this;
 }
 
-std::string HttpRequestImpl::Path() { return "/"; }
+std::chrono::milliseconds ListenerConfig::GetRWTimeout() { return rw_timeout_; }
 
-HttpMethod HttpRequestImpl::Method() { return HttpMethods::GET; }
+size_t ListenerConfig::GetKeepAliveCount() { return keep_alive_count_; }
 
-Status HttpRequestImpl::Reply(HttpCode status) { return STATUS_OK; }
-
-Status HttpRequestImpl::Reply(
-    HttpCode status,
-    const std::unordered_multimap<std::string, std::string> &headers,
-    const std::string &body) {
-  return STATUS_OK;
+std::chrono::milliseconds ListenerConfig::GetKeepAliveTimeout() {
+  return keep_alive_timeout_;
 }
 
-Status HttpRequestImpl::Parse() { return STATUS_OK; }
+std::shared_ptr<HttpListener> HttpListener::GetListener(
+    const std::string &url) {
+  auto http_url = std::make_shared<HttpURL>(url);
+  auto ret = http_url->Parse();
+  if (ret != STATUS_OK) {
+    NS_LOG_ERROR << "parse url failed, ret " << ret.ToString();
+    return nullptr;
+  }
 
-HttpListenerImpl::HttpListenerImpl(const std::string &url) : url_(url) {}
+  return std::make_shared<HttpListenerImpl>(http_url);
+}
+
+HttpListenerImpl::HttpListenerImpl(std::shared_ptr<HttpURL> url) : url_(url) {}
 
 HttpListenerImpl::~HttpListenerImpl() {
   auto &server = HttpServer::GetInstance();
@@ -40,13 +43,18 @@ HttpListenerImpl::~HttpListenerImpl() {
 
 void HttpListenerImpl::Handle(const HttpMethod &method,
                               const HandleFunc &func) {
+  std::lock_guard<std::mutex> lock(func_lock_);
   method_to_func_[method] = func;
 }
 
-Status HttpListenerImpl::Start() {
+Status HttpListenerImpl::Serve(const ListenerConfig &config) {
+  if (is_running_) {
+    return STATUS_OK;
+  }
+
   auto &server = HttpServer::GetInstance();
-  auto ret = server.AddListener(url_, shared_from_this());
-  if (!ret) {
+  auto ret = server.AddListener(shared_from_this());
+  if (ret != STATUS_OK) {
     return ret;
   }
 
@@ -54,8 +62,34 @@ Status HttpListenerImpl::Start() {
   return STATUS_OK;
 }
 
+base::Status HttpListenerImpl::Stop() {
+  if (!is_running_) {
+    return STATUS_OK;
+  }
+
+  auto &server = HttpServer::GetInstance();
+  auto ret = server.DelListener(this);
+  if (ret != STATUS_OK) {
+    return ret;
+  }
+
+  is_running_ = false;
+  return STATUS_OK;
+}
+
+std::string HttpListenerImpl::GetListenURL() { return url_->ToString(); }
+
+std::string HttpListenerImpl::GetScheme() { return url_->GetScheme(); }
+
+std::string HttpListenerImpl::GetServeIP() { return url_->GetIp(); }
+
+std::string HttpListenerImpl::GetServePort() { return url_->GetPort(); }
+
+std::string HttpListenerImpl::GetListenPath() { return url_->GetPath(); }
+
 void HttpListenerImpl::Process(std::shared_ptr<HttpRequest> request) {
   auto method = request->Method();
+  std::lock_guard<std::mutex> lock(func_lock_);
   auto item = method_to_func_.find(method);
   if (item == method_to_func_.end()) {
     request->Reply(HttpCodes::NOT_FOUND);
@@ -65,22 +99,6 @@ void HttpListenerImpl::Process(std::shared_ptr<HttpRequest> request) {
   item->second(request);
 }
 
-HttpListenerBuilder::HttpListenerBuilder(const std::string &url) : url_(url) {}
-
-HttpListenerBuilder &HttpListenerBuilder::SetKeepAliveCount(size_t count) {
-  keep_alive_count_ = count;
-  return *this;
-}
-
-HttpListenerBuilder &HttpListenerBuilder::SetSSLSettingCallback(
-    const SSLSettingCallback &func) {
-  ssl_setting_cb_ = func;
-  return *this;
-}
-
-std::shared_ptr<HttpListener> HttpListenerBuilder::Build() {
-  return std::make_shared<HttpListenerImpl>(url_);
-}
-
+}  // namespace server
 }  // namespace http
 }  // namespace netswitch

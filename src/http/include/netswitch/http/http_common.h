@@ -29,6 +29,8 @@ class HttpCodes {
   static const HttpCode NOT_FOUND;
 };
 
+std::string HttpCodesToString(HttpCode code);
+
 using HttpScheme = std::string;
 
 class HttpSchemes {

@@ -1,56 +1,51 @@
-#ifndef NET_SWITCH_HTTP_ROUTER_H_
-#define NET_SWITCH_HTTP_ROUTER_H_
+#ifndef NET_SWITCH_HTTP_SERVER_H_
+#define NET_SWITCH_HTTP_SERVER_H_
 
 #include <mutex>
 #include <unordered_map>
 
-#include "netswitch/base/connection.h"
+#include "netswitch/base/connection/connection.h"
 #include "netswitch/base/prefix_tree.h"
 #include "netswitch/base/status.h"
+#include "netswitch/http/http_listener.h"
 
 namespace netswitch {
 namespace http {
+namespace server {
 
-using UrlToListener =
+using PathToListener =
     std::unordered_map<std::string, std::shared_ptr<HttpListener>>;
-
-class HttpRouter {
- public:
-  Status AddListener(std::shared_ptr<HttpListener> listener);
-
-  void DelListener(HttpListener *listener);
-
-  Status Route(std::shared_ptr<HttpRequest> request);
-
- private:
-  std::mutex listener_map_lock_;
-  UrlToListener listener_map_;
-  PrefixTree path_match_;
-};
 
 class HttpServerCtx {
  public:
-  HttpServerCtx(std::shared_ptr<ServerSocket> server_socket,
-                const std::string &scheme)
-      : server_socket_(server_socket), scheme_(scheme) {}
+  HttpServerCtx(const std::string &scheme, const std::string &ip,
+                const std::string &port);
+
+  ~HttpServerCtx();
 
   const std::string &GetScheme();
 
-  void AddRef();
+  base::Status AddListener(std::shared_ptr<HttpListener> listener);
 
-  void DelRef();
+  base::Status DelListener(HttpListener *listener);
 
-  bool IsValid();
+  bool IsEmpty();
 
-  Status Start(const HttpServerConfig &config);
+  void OnConnect(std::shared_ptr<base::Pipe> pipe);
 
  private:
-  std::shared_ptr<ServerSocket> server_socket_;
+  std::shared_ptr<base::PipeListener> pipe_listener_;
   std::string scheme_;
+  std::string ip_;
+  std::string port_;
+
+  std::mutex listener_lock_;
+  base::PrefixTree path_matcher_{"/"};
+  PathToListener path_to_listener_;
 };
 
-using EndpointToSocket =
-    std::unordered_map<std::string, std::shared_ptr<HttpServerSockCtx>>;
+using IpPortToCtx =
+    std::unordered_map<std::string, std::shared_ptr<HttpServerCtx>>;
 
 class HttpServer {
  public:
@@ -61,28 +56,18 @@ class HttpServer {
   HttpServer &operator=(const HttpServer &) = delete;
   HttpServer &operator=(HttpServer &&) = delete;
 
-  Status AddListener(std::shared_ptr<HttpListener> listener);
+  base::Status AddListener(std::shared_ptr<HttpListener> listener);
 
-  Status StartListen(HttpListener *listener, const HttpServerConfig &config);
-
-  Status DelListener(HttpListener *listener);
-
-  void ClientSocketProcess(std::shared_ptr<SocketFD> fd, const void *cb_data);
+  base::Status DelListener(HttpListener *listener);
 
  private:
   HttpServer() = default;
 
-  Status AddContext(const std::string &scheme, const std::string &ip,
-                    const std::string &port);
-
-  void DelContext(const std::string &ip, const std::string &port);
-
-  std::mutex socket_map_lock_;
-  EndpointToSocket socket_map_;
-
-  HttpRouter router_;
+  std::mutex ctx_map_lock_;
+  IpPortToCtx ctx_map_;
 };
+}  // namespace server
 }  // namespace http
 }  // namespace netswitch
 
-#endif  // NET_SWITCH_HTTP_ROUTER_H_
+#endif  // NET_SWITCH_HTTP_SERVER_H_

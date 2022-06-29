@@ -1,17 +1,19 @@
-#include "http_url.h"
+#include "netswitch/http/http_url.h"
 
 #include <regex>
 
-#include "http_common.h"
+#include "netswitch/http/http_common.h"
 
 namespace netswitch {
 namespace http {
+
+using namespace base;
 
 HttpURL::HttpURL(const std::string &url) : url_(url) {}
 
 Status HttpURL::Parse() {
   std::regex url_pattern(
-      "(https?://)([\\w\\-\\.]+)(:([0-9]+))?(/|(/[\\w\\-\\.]+)+)?");
+      "(https?://)([\\w\\-\\.0-9]+)(:([0-9]+))?(/[^\?]*)(.*)?");
   std::smatch url_match_result;
   auto ret = std::regex_match(url_, url_match_result, url_pattern);
   if (!ret) {
@@ -26,6 +28,7 @@ Status HttpURL::Parse() {
   ip_ = url_match_result[2];
   port_ = url_match_result[4];
   path_ = url_match_result[5];
+  args_ = url_match_result[6];
 
   if (port_.empty()) {
     port_ = scheme_ == HttpSchemes::HTTP ? "80" : "443";

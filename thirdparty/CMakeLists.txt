@@ -10,6 +10,7 @@ set(GOOGLETEST_SOURCE_DIR ${DOWNLOAD_DIR}/googletest)
 
 configure_file(./download/CMakeLists.txt.in ${DOWNLOAD_DIR}/CMakeLists.txt)
 
-execute_process(COMMAND cmake ../ COMMAND make WORKING_DIRECTORY ${DOWNLOAD_BUILD_DIR})
+execute_process(COMMAND cmake ../ WORKING_DIRECTORY ${DOWNLOAD_BUILD_DIR})
+execute_process(COMMAND make WORKING_DIRECTORY ${DOWNLOAD_BUILD_DIR})
 
 add_subdirectory(${GOOGLETEST_SOURCE_DIR} ${DOWNLOAD_BUILD_DIR})

@@ -33,11 +33,8 @@ void Pipe::Close() {
 
 PipeListener::PipeListener(const std::string &local_ip,
                            const std::string &local_port,
-                           const OnConnectCallback &callback, void *cb_data)
-    : local_ip_(local_ip),
-      local_port_(local_port),
-      callback_(callback),
-      cb_data_(cb_data) {}
+                           const OnConnectCallback &callback)
+    : local_ip_(local_ip), local_port_(local_port), callback_(callback) {}
 
 PipeListener::~PipeListener() {
   running_ = false;
@@ -113,7 +110,7 @@ void PipeListener::Process() {
     }
 
     auto pipe = std::make_shared<Pipe>(client_fd);
-    ThreadPool::GetInstance().Submit(callback_, pipe, cb_data_);
+    ThreadPool::GetInstance().Submit(callback_, pipe);
   }
 }
 

@@ -1,5 +1,5 @@
-#ifndef NET_SWITCH_PREFIX_TREE_H_
-#define NET_SWITCH_PREFIX_TREE_H_
+#ifndef NET_SWITCH_LOG_H_
+#define NET_SWITCH_LOG_H_
 
 #include <iostream>
 #include <sstream>
@@ -9,14 +9,7 @@
 namespace netswtich {
 namespace base {
 
-enum LogLevel { NS_LOG_DEBUG, NS_LOG_INFO, NS_LOG_WARN, NS_LOG_ERROR };
-
-std::unordered_map<LogLevel, std::string> g_level_to_string = {
-    {NS_LOG_DEBUG, "DEBUG"},
-    {NS_LOG_INFO, "INFO"},
-    {NS_LOG_WARN, "WARN"},
-    {NS_LOG_ERROR, "ERROR"},
-};
+enum class LogLevel { DEBUG, INFO, WARN, ERROR };
 
 class LogStream {
  public:
@@ -24,13 +17,9 @@ class LogStream {
             LogLevel level)
       : file_(file), func_(func), line_(line), level_(level) {}
 
-  std::stringstream &GetStream() {
-    msg_ << g_level_to_string[level_] << " "
-         << "[" << file_ << ":" << func_ << ":" << line_ << "] ";
-    return msg_;
-  }
+  std::stringstream &GetStream();
 
-  ~LogStream() { std::cout << msg_.str() << std::endl; }
+  ~LogStream();
 
  private:
   std::string file_;
@@ -38,6 +27,8 @@ class LogStream {
   size_t line_;
   LogLevel level_;
   std::stringstream msg_;
+
+  static std::unordered_map<LogLevel, std::string> level_to_string_;
 };
 
 }  // namespace base
@@ -45,9 +36,9 @@ class LogStream {
 
 #define NS_LOG(level) \
   netswtich::base::LogStream(__FILE__, __func__, __LINE__, level).GetStream()
-#define NS_LOG_DEBUG NS_LOG(netswtich::base::LogLevel::NS_LOG_DEBUG)
-#define NS_LOG_INFO NS_LOG(netswtich::base::LogLevel::NS_LOG_INFO)
-#define NS_LOG_WARN NS_LOG(netswtich::base::LogLevel::NS_LOG_WARN)
-#define NS_LOG_ERROR NS_LOG(netswtich::base::LogLevel::NS_LOG_ERROR)
+#define NS_LOG_DEBUG NS_LOG(netswtich::base::LogLevel::DEBUG)
+#define NS_LOG_INFO NS_LOG(netswtich::base::LogLevel::INFO)
+#define NS_LOG_WARN NS_LOG(netswtich::base::LogLevel::WARN)
+#define NS_LOG_ERROR NS_LOG(netswtich::base::LogLevel::ERROR)
 
-#endif
+#endif  // NET_SWITCH_LOG_H_

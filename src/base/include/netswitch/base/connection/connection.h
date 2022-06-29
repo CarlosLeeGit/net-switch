@@ -34,13 +34,12 @@ class Pipe {
   SocketFD fd_{-1};
 };
 
-using OnConnectCallback =
-    std::function<void(std::shared_ptr<Pipe> pipe, const void *cb_data)>;
+using OnConnectCallback = std::function<void(std::shared_ptr<Pipe> pipe)>;
 
 class PipeListener {
  public:
   PipeListener(const std::string &local_ip, const std::string &local_port,
-               const OnConnectCallback &callback, void *cb_data);
+               const OnConnectCallback &callback);
 
   virtual ~PipeListener();
 
@@ -58,7 +57,6 @@ class PipeListener {
   std::string local_ip_;
   std::string local_port_;
   OnConnectCallback callback_;
-  void *cb_data_;
 
   SocketFD server_fd_{-1};
   std::mutex state_lock_;

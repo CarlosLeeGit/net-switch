@@ -11,6 +11,7 @@ enum StatusCode {
   STATUS_FAIL,
   STATUS_EXIST,
   STATUS_NOTFOUND,
+  STATUS_NOTSUPPORT,
 };
 
 class Status {
@@ -26,6 +27,8 @@ class Status {
   bool operator==(StatusCode code) const;
 
   operator StatusCode() const;
+
+  std::string ToString();
 
  private:
   StatusCode code_{STATUS_OK};

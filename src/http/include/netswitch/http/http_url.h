@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "status.h"
+#include "netswitch/base/status.h"
 
 namespace netswitch {
 namespace http {
@@ -11,7 +11,7 @@ class HttpURL {
  public:
   HttpURL(const std::string &url);
 
-  Status Parse();
+  base::Status Parse();
 
   std::string GetScheme();
 
@@ -29,6 +29,7 @@ class HttpURL {
   std::string ip_;
   std::string port_;
   std::string path_;
+  std::string args_;
 };
 
 }  // namespace http
